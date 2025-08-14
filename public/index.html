@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRT to VTT Converter</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SRT to VTT Converter</h1>
+            <p>Convert your SRT subtitle files to Bunny Stream-compatible VTT format with automatic spelling correction</p>
+        </header>
+
+        <main>
+            <div class="upload-section">
+                <div id="dropZone" class="drop-zone">
+                    <div class="drop-zone-content">
+                        <svg class="upload-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7,10 12,15 17,10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <h3>Drop your SRT file here</h3>
+                        <p>or <button type="button" id="browseBtn" class="browse-btn">browse files</button></p>
+                        <small>Only .srt files are supported</small>
+                    </div>
+                </div>
+                <input type="file" id="fileInput" accept=".srt" style="display: none;">
+                
+                <div class="upload-options">
+                    <div class="option-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="includeBase64" class="option-checkbox">
+                            <span class="checkmark"></span>
+                            Include Base64 output for Bunny Stream API
+                        </label>
+                        <small class="option-description">Generate Base64 encoded content for direct API integration</small>
+                    </div>
+                </div>
+            </div>
+
+            <div id="progressSection" class="progress-section hidden">
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                    <div id="progressText" class="progress-text">Uploading...</div>
+                </div>
+            </div>
+
+            <div id="messageSection" class="message-section hidden">
+                <div id="messageContent" class="message"></div>
+            </div>
+
+            <div id="resultSection" class="result-section hidden">
+                <div class="result-content">
+                    <svg class="success-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22,4 12,14.01 9,11.01"></polyline>
+                    </svg>
+                    <h3>Conversion Complete!</h3>
+                    <p>Your VTT file is ready for download</p>
+                    
+                    <div id="languageInfo" class="language-info hidden">
+                        <div class="language-detected">
+                            <span class="language-label">Detected Language:</span>
+                            <span id="detectedLanguage" class="language-name"></span>
+                            <span id="languageConfidence" class="language-confidence"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="download-options">
+                        <button id="downloadBtn" class="download-btn primary">Download VTT File</button>
+                        <button id="copyBase64Btn" class="copy-base64-btn secondary hidden">Copy Base64 for Bunny Stream</button>
+                    </div>
+                    
+                    <div id="base64Section" class="base64-section hidden">
+                        <div class="base64-info">
+                            <p>Base64 encoded content ready for Bunny Stream API:</p>
+                            <textarea id="base64Content" class="base64-textarea" readonly></textarea>
+                            <div class="base64-actions">
+                                <button id="copyBase64TextBtn" class="copy-btn">Copy to Clipboard</button>
+                                <small class="base64-hint">Use this content directly with Bunny Stream's subtitle API</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

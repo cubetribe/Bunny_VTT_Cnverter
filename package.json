@@ -1,0 +1,66 @@
+{
+  "name": "bunny-vtt-converter",
+  "version": "0.1.0",
+  "description": "Enterprise-grade SRT to VTT subtitle converter with AI-powered text correction for Bunny Stream",
+  "main": "server.js",
+  "author": "Dennis Westermann <contact@aiex-academy.com>",
+  "license": "PROPRIETARY",
+  "homepage": "https://github.com/yourusername/bunny-vtt-converter#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/bunny-vtt-converter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/bunny-vtt-converter/issues"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "scripts": {
+    "start": "NODE_ENV=production node server.js",
+    "dev": "NODE_ENV=development nodemon server.js --ignore tests/ --ignore coverage/",
+    "dev:debug": "NODE_ENV=development DEBUG=* nodemon server.js --ignore tests/ --ignore coverage/",
+    "prod": "NODE_ENV=production node server.js",
+    "test": "NODE_ENV=test jest",
+    "test:watch": "NODE_ENV=test jest --watch",
+    "test:coverage": "NODE_ENV=test jest --coverage",
+    "test:unit": "NODE_ENV=test jest --testPathPattern='(encoding|srt-parser|vtt-generator|openai-integration)\\.test\\.js'",
+    "test:integration": "NODE_ENV=test jest --testPathPattern='(convert-endpoint|integration-pipeline)\\.test\\.js'",
+    "test:verbose": "NODE_ENV=test jest --verbose",
+    "validate-env": "node scripts/validate-env.js",
+    "prestart": "npm run validate-env",
+    "postinstall": "npm run validate-env"
+  },
+  "keywords": [
+    "srt",
+    "vtt",
+    "webvtt",
+    "subtitles",
+    "captions",
+    "bunny-stream",
+    "bunny-cdn",
+    "openai",
+    "gpt",
+    "ai",
+    "converter",
+    "video",
+    "streaming",
+    "language-detection",
+    "encoding-detection"
+  ],
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "iconv-lite": "^0.6.3",
+    "multer": "^1.4.5-lts.1",
+    "openai": "^4.20.1"
+  },
+  "devDependencies": {
+    "form-data": "^4.0.4",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.1",
+    "supertest": "^7.1.4"
+  }
+}
