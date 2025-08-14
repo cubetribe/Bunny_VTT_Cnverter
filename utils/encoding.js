@@ -118,37 +118,12 @@ function convertToUTF8(buffer, encoding = null) {
   }
 
   try {
-    // Auto-detect encoding if not provided
     const sourceEncoding = encoding || detectEncoding(buffer);
     
-    // If already UTF-8, check for double-encoding issues
-    if (sourceEncoding === 'utf8') {
-      // Check for and remove UTF-8 BOM
-      let cleanBuffer = buffer;
-      if (buffer.length >= 3 && 
-          buffer[0] === 0xEF && 
-          buffer[1] === 0xBB && 
-          buffer[2] === 0xBF) {
-        cleanBuffer = buffer.slice(3);
-      }
-      
-      // Always run the double-encoding fix routine for UTF-8 files.
-      // This handles cases where UTF-8 content was mangled prior to being saved.
-      const text = cleanBuffer.toString('utf8');
-      const fixedText = fixDoubleEncodedUTF8(text);
-
-      // Only return a new buffer if text was actually changed
-      if (fixedText !== text) {
-        return Buffer.from(fixedText, 'utf8');
-      }
-      
-      return cleanBuffer;
-    }
-
-    // Convert from source encoding to UTF-8
     let decoded = iconv.decode(buffer, sourceEncoding);
     
-    // After decoding, run the fix routine to catch double-encoded characters
+    // After decoding, run the fix routine to catch potential double-encoded characters.
+    // This is safe to run even on correctly-encoded strings.
     decoded = fixDoubleEncodedUTF8(decoded);
     
     const utf8Buffer = iconv.encode(decoded, 'utf8');
@@ -166,7 +141,6 @@ function convertToUTF8(buffer, encoding = null) {
     console.warn(`Encoding conversion failed for ${encoding || 'auto-detected'}: ${error.message}`);
     console.warn('Falling back to UTF-8 interpretation');
     
-    // Fallback: treat as UTF-8 and remove BOM if present
     if (buffer.length >= 3 && 
         buffer[0] === 0xEF && 
         buffer[1] === 0xBB && 
@@ -178,42 +152,32 @@ function convertToUTF8(buffer, encoding = null) {
 }
 
 /**
- * Fixes double-encoded UTF-8 text where UTF-8 bytes were misinterpreted as ISO-8859-1
+ * Fixes double-encoded UTF-8 text where UTF-8 bytes were misinterpreted as a single-byte encoding.
  * @param {string} text - The text with potential double-encoding issues
  * @returns {string} - Fixed text with correct UTF-8 characters
  */
 function fixDoubleEncodedUTF8(text) {
-  // This function fixes text that was decoded as latin1/iso-8859-1 but was originally UTF-8.
-  // This is a common issue with file uploads where encoding is not specified.
-  
   try {
-    // A regex to detect the most common pattern of double-encoding.
-    // It checks for "Ã" followed by a character in the upper ASCII range.
-    // This is the classic signature of UTF-8 characters being misinterpreted as single-byte encoding.
-    const doubleEncodingPattern = /Ã[Â-Ÿ]/;
-    if (!doubleEncodingPattern.test(text)) {
-      // If the pattern isn't found, no need to perform the fix.
+    // This pattern is a strong indicator of UTF-8 bytes being misinterpreted as latin1 or similar.
+    // e.g., 'ü' (UTF-8: C3 BC) becomes 'Ã¼' when decoded as latin1.
+    if (!text.includes('Ã')) {
       return text;
     }
 
-    // Convert the broken string back to a byte buffer using 'latin1'.
-    // This effectively reverses the incorrect decoding, giving us the original UTF-8 bytes.
+    // Reverse the incorrect decoding: encode the broken string's char codes as bytes.
     const originalBytes = iconv.encode(text, 'latin1');
 
-    // Now, decode the buffer correctly as UTF-8.
+    // Now, decode those bytes correctly as UTF-8.
     const fixedText = iconv.decode(originalBytes, 'utf8');
 
-    // If the original text and fixed text are the same, something is wrong,
-    // or it was a false positive. Return the original text.
-    if (fixedText === text) {
+    // If the fix didn't change anything or introduced new errors, revert to the original.
+    if (fixedText === text || fixedText.includes('Ã')) {
       return text;
     }
 
     return fixedText;
   } catch (error) {
-    // If any part of the process fails, log the error and return the original text
-    // to avoid breaking the entire conversion process.
-    console.error('Error during double-encoding fix:', error);
+    // If the process fails, return the original text to prevent crashes.
     return text;
   }
 }
