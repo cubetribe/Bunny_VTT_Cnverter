@@ -121,20 +121,51 @@ function convertToUTF8(buffer, encoding = null) {
     // Auto-detect encoding if not provided
     const sourceEncoding = encoding || detectEncoding(buffer);
     
-    // If already UTF-8, just remove BOM if present
+    // If already UTF-8, check for double-encoding issues
     if (sourceEncoding === 'utf8') {
       // Check for and remove UTF-8 BOM
+      let cleanBuffer = buffer;
       if (buffer.length >= 3 && 
           buffer[0] === 0xEF && 
           buffer[1] === 0xBB && 
           buffer[2] === 0xBF) {
-        return buffer.slice(3);
+        cleanBuffer = buffer.slice(3);
       }
-      return buffer;
+      
+      // Check for double-encoded UTF-8
+      const text = cleanBuffer.toString('utf8');
+      console.log('🔍 Checking for double-encoding in UTF-8 buffer...');
+      if (text.includes('Ã¼') || text.includes('Ã¶') || text.includes('Ã¤') || 
+          text.includes('ÃŸ') || text.includes('Ã„') || text.includes('Ã–') || 
+          text.includes('Ãœ') || text.includes('Ã©') || text.includes('Ã¨')) {
+        console.log('⚠️  FOUND double-encoded characters!');
+        console.log('Before fix (first 200 chars):', text.substring(0, 200));
+        const fixedText = fixDoubleEncodedUTF8(text);
+        console.log('After fix (first 200 chars):', fixedText.substring(0, 200));
+        return Buffer.from(fixedText, 'utf8');
+      } else {
+        console.log('✅ No double-encoding detected in UTF-8 buffer');
+      }
+      
+      return cleanBuffer;
     }
 
     // Convert from source encoding to UTF-8
-    const decoded = iconv.decode(buffer, sourceEncoding);
+    let decoded = iconv.decode(buffer, sourceEncoding);
+    
+    // Check for double-encoding in the decoded text
+    console.log('🔍 Checking for double-encoding after decoding from', sourceEncoding);
+    if (decoded.includes('Ã¼') || decoded.includes('Ã¶') || decoded.includes('Ã¤') || 
+        decoded.includes('ÃŸ') || decoded.includes('Ã„') || decoded.includes('Ã–') || 
+        decoded.includes('Ãœ') || decoded.includes('Ã©') || decoded.includes('Ã¨')) {
+      console.log('⚠️  FOUND double-encoded characters after conversion!');
+      console.log('Before fix (first 200 chars):', decoded.substring(0, 200));
+      decoded = fixDoubleEncodedUTF8(decoded);
+      console.log('After fix (first 200 chars):', decoded.substring(0, 200));
+    } else {
+      console.log('✅ No double-encoding detected after conversion');
+    }
+    
     const utf8Buffer = iconv.encode(decoded, 'utf8');
     
     // Ensure no BOM in output
@@ -162,6 +193,77 @@ function convertToUTF8(buffer, encoding = null) {
 }
 
 /**
+ * Fixes double-encoded UTF-8 text where UTF-8 bytes were misinterpreted as ISO-8859-1
+ * @param {string} text - The text with potential double-encoding issues
+ * @returns {string} - Fixed text with correct UTF-8 characters
+ */
+function fixDoubleEncodedUTF8(text) {
+  // Pattern for double-encoded UTF-8 characters
+  const replacements = {
+    'Ã¤': 'ä',
+    'Ã¶': 'ö',
+    'Ã¼': 'ü',
+    'Ã„': 'Ä',
+    'Ã–': 'Ö',
+    'Ãœ': 'Ü',
+    'ÃŸ': 'ß',
+    'Ã©': 'é',
+    'Ã¨': 'è',
+    'Ã ': 'à',
+    'Ã¢': 'â',
+    'Ã§': 'ç',
+    'Ã±': 'ñ',
+    'Ã¡': 'á',
+    'Ã­': 'í',
+    'Ã³': 'ó',
+    'Ãº': 'ú',
+    'Ã€': 'À',
+    'Ã‰': 'É',
+    'Ãˆ': 'È',
+    'Ã‚': 'Â',
+    'ÃŠ': 'Ê',
+    'Ã´': 'ô',
+    'Ã®': 'î',
+    'Ã¯': 'ï',
+    'Ã«': 'ë',
+    'â€™': "'",
+    'â€œ': '"',
+    'â€�': '"',
+    'â€"': '—',
+    'â€"': '–',
+    'â€¦': '…',
+    // Additional patterns from real-world double-encoding - actual UTF-8 sequences as seen
+    'Ã¼': 'ü',
+    'Ã¶': 'ö', 
+    'Ã¤': 'ä',
+    'Ã': 'ß',  // standalone Ã often becomes ß
+    // Additional patterns for triple-encoded cases
+    'ÃƒÂ¤': 'ä',
+    'ÃƒÂ¶': 'ö',
+    'ÃƒÂ¼': 'ü',
+    'ÃƒÅ¸': 'ß',
+    'Ã¢â‚¬Å"': '"',
+    'Ã¢â‚¬ï¿½': '"',
+    'Ã¢â‚¬â„¢': "'",
+    'Ã¢â‚¬â€œ': '–',
+    'Ã¢â‚¬â€�': '—'
+  };
+  
+  let fixed = text;
+  // First pass: fix triple-encoded patterns
+  for (const [broken, correct] of Object.entries(replacements)) {
+    fixed = fixed.replace(new RegExp(broken.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), correct);
+  }
+  
+  // Second pass: check if we need another round (for deeply nested encodings)
+  if (fixed !== text && (fixed.includes('Ã') || fixed.includes('â€'))) {
+    fixed = fixDoubleEncodedUTF8(fixed);
+  }
+  
+  return fixed;
+}
+
+/**
  * Validates if a buffer contains valid text in the specified encoding
  * @param {Buffer} buffer - The buffer to validate
  * @param {string} encoding - The encoding to validate against
@@ -180,5 +282,6 @@ function isValidEncoding(buffer, encoding) {
 module.exports = {
   detectEncoding,
   convertToUTF8,
-  isValidEncoding
+  isValidEncoding,
+  fixDoubleEncodedUTF8
 };

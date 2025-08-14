@@ -1,6 +1,6 @@
 # 🎬 Bunny VTT Converter
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/yourusername/bunny-vtt-converter)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/yourusername/bunny-vtt-converter)
 [![Node](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen.svg)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
 [![Made with Love](https://img.shields.io/badge/Made%20with-❤️-red.svg)](https://goaiex.com)

@@ -1,6 +1,6 @@
 {
   "name": "bunny-vtt-converter",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Enterprise-grade SRT to VTT subtitle converter with AI-powered text correction for Bunny Stream",
   "main": "server.js",
   "author": "Dennis Westermann <contact@aiex-academy.com>",

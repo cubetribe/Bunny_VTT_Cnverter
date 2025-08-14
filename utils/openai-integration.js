@@ -43,11 +43,36 @@ class OpenAIIntegration {
    * @returns {string} The formatted prompt
    */
   buildCorrectionPrompt(srtContent) {
-    return `Korrigiere Rechtschreibung und Grammatik dieser Untertitel. 
-Behalte Zeitstempel und Struktur exakt bei. 
-Korrigiere nur den Text zwischen den Zeitstempeln. 
-Behalte Zeilenumbrüche im Text bei. 
-Nutze korrekte deutsche Rechtschreibung (ü, ö, ä, ß).
+    return `Du bist ein Experte für deutsche Untertitel-Korrektur.
+
+KRITISCHE KORREKTUREN - HÖCHSTE PRIORITÄT:
+1. FIRMENNAME: "aiEX Academy" (NICHT "AIX Academy"!)
+   - Schreibweise: klein "ai" dann groß "EX" 
+   - JEDES Vorkommen von "AIX Academy" → "aiEX Academy"
+   - JEDES Vorkommen von "AIX" allein → "aiEX"
+   - Auch falsche Varianten wie "aix", "ax", "ix" → "aiEX"
+
+2. SPEZIELLE RECHTSCHREIBKORREKTUREN:
+   - "wendern" → "wenn andere"  
+   - "Sack-Halo-Bereich" → "Sag-Hallo-Bereich"
+   - "Promt" → "Prompt"
+
+3. DEUTSCHE UMLAUTE - stelle sicher, dass alle korrekt sind:
+   - ü, ö, ä, ß, Ü, Ö, Ä (keine komischen Zeichen!)
+
+KONTEXT - KÜNSTLICHE INTELLIGENZ:
+- "clod", "klod", "cloud" → "Claude" (Anthropic's AI)
+- "Tschätt-GPT", "Tschet GPT", "Chat-GPT" → "ChatGPT"
+- "open AI", "Open-AI", "Open AI" → "OpenAI"
+- "GPT-5", "GPT5", "GPT 5" → "GPT-5" (NEU August 2025!)
+- "LLM" → "LLM" (Large Language Model)
+- KI-Tools: Gemini, Perplexity, Midjourney, DALL-E, Stable Diffusion
+
+REGELN:
+- Behalte Zeitstempel EXAKT bei - ändere sie NIEMALS
+- Korrigiere NUR den Text zwischen den Zeitstempeln
+- Behalte Zeilenumbrüche im Text bei
+- Nutze korrekte deutsche Rechtschreibung
 
 ${srtContent}`;
   }
@@ -104,15 +129,22 @@ ${srtContent}`;
         console.log(`Attempting OpenAI correction (attempt ${attempt + 1}/${maxRetries + 1})`);
         
         const response = await this.client.chat.completions.create({
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-5-mini',  // Using GPT-5-mini for cost-effective corrections
           messages: [
+            {
+              role: 'system',
+              content: 'Du bist ein Experte für deutsche Rechtschreibung und Grammatik im Bereich KI/AI. Korrigiere Untertitel von aiEX Academy präzise und behalte dabei das Format exakt bei. WICHTIG: Der Firmenname ist "aiEX Academy" (NICHT "AIX Academy")!'
+            },
             {
               role: 'user',
               content: prompt
             }
           ],
-          max_tokens: 4000,
-          temperature: 0.1 // Low temperature for consistent corrections
+          max_completion_tokens: 4000,  // GPT-5 uses max_completion_tokens instead of max_tokens
+          temperature: 1, // GPT-5 only supports default temperature
+          // GPT-5 specific parameters (new in August 2025):
+          reasoning_effort: 'minimal', // Fast answers for subtitle correction
+          verbosity: 'low' // Short, precise corrections without explanations
         });
 
         if (response.choices && response.choices.length > 0) {

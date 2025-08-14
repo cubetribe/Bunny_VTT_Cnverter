@@ -1,4 +1,4 @@
-const { detectEncoding, convertToUTF8, isValidEncoding } = require('../utils/encoding');
+const { detectEncoding, convertToUTF8, isValidEncoding, fixDoubleEncodedUTF8 } = require('../utils/encoding');
 const iconv = require('iconv-lite');
 const { createEncodedBuffers, createEncodingTestBuffers, validSRTSamples } = require('./fixtures/test-data');
 
@@ -151,6 +151,86 @@ describe('Encoding Detection and Conversion', () => {
       // Create an invalid UTF-8 sequence
       const invalidUTF8Buffer = Buffer.from([0xC0, 0x80]); // Overlong encoding
       expect(isValidEncoding(invalidUTF8Buffer, 'utf8')).toBe(false);
+    });
+  });
+
+  describe('Double-encoded UTF-8 fix', () => {
+    test('should fix double-encoded German umlauts', () => {
+      const broken = 'begrÃ¼ÃŸen zu dÃ¼rfen';
+      const fixed = fixDoubleEncodedUTF8(broken);
+      expect(fixed).toBe('begrüßen zu dürfen');
+    });
+    
+    test('should fix all German special characters', () => {
+      const broken = 'Ã¤ Ã¶ Ã¼ Ã„ Ã– Ãœ ÃŸ';
+      const fixed = fixDoubleEncodedUTF8(broken);
+      expect(fixed).toBe('ä ö ü Ä Ö Ü ß');
+    });
+    
+    test('should fix French accented characters', () => {
+      const broken = 'Ã© Ã¨ Ã  Ã¢ Ã§';
+      const fixed = fixDoubleEncodedUTF8(broken);
+      expect(fixed).toBe('é è à â ç');
+    });
+    
+    test('should fix Spanish characters', () => {
+      const broken = 'Ã±';
+      const fixed = fixDoubleEncodedUTF8(broken);
+      expect(fixed).toBe('ñ');
+    });
+    
+    test('should handle mixed content with double-encoded and normal text', () => {
+      const broken = 'Hello Ã¼ber die BrÃ¼cke gehen';
+      const fixed = fixDoubleEncodedUTF8(broken);
+      expect(fixed).toBe('Hello über die Brücke gehen');
+    });
+    
+    test('should not modify correctly encoded text', () => {
+      const correct = 'Hello World! This is fine.';
+      const result = fixDoubleEncodedUTF8(correct);
+      expect(result).toBe(correct);
+    });
+    
+    test('should fix double-encoded text in convertToUTF8', () => {
+      const doubleEncodedText = 'begrÃ¼ÃŸen zu dÃ¼rfen';
+      const buffer = Buffer.from(doubleEncodedText, 'utf8');
+      const result = convertToUTF8(buffer);
+      expect(result.toString('utf8')).toBe('begrüßen zu dürfen');
+    });
+    
+    test('should handle real-world double-encoded SRT content', () => {
+      // Test with the actual pattern seen in the user's files
+      const doubleEncodedSRT = `1
+00:00:01,000 --> 00:00:03,000
+begrÃ¼ÃŸen zu dÃ¼rfen
+
+2
+00:00:04,000 --> 00:00:06,000
+MÃ¼ller sagte "Hallo"`;
+      
+      const buffer = Buffer.from(doubleEncodedSRT, 'utf8');
+      const result = convertToUTF8(buffer);
+      const fixedText = result.toString('utf8');
+      
+      expect(fixedText).toContain('begrüßen zu dürfen');
+      expect(fixedText).toContain('Müller sagte "Hallo"');
+    });
+    
+    test('should handle SRT with mixed double-encoding issues', () => {
+      const brokenSRT = `1
+00:00:01,000 --> 00:00:03,000
+Ã¼ber die BrÃ¼cke
+
+2
+00:00:04,000 --> 00:00:06,000
+MÃ¼ller groÃŸ`;
+      
+      const buffer = Buffer.from(brokenSRT, 'utf8');
+      const result = convertToUTF8(buffer);
+      const fixedText = result.toString('utf8');
+      
+      expect(fixedText).toContain('über die Brücke');
+      expect(fixedText).toContain('Müller groß');
     });
   });
 
