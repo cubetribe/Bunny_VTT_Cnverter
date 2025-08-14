@@ -3,7 +3,7 @@
 [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/yourusername/bunny-vtt-converter)
 [![Node](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen.svg)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
-[![Made with Love](https://img.shields.io/badge/Made%20with-❤️-red.svg)](https://aiex-academy.com)
+[![Made with Love](https://img.shields.io/badge/Made%20with-❤️-red.svg)](https://goaiex.com)
 
 > Enterprise-grade SRT to VTT subtitle converter with AI-powered text correction, specifically designed for seamless Bunny Stream integration.
 
@@ -280,9 +280,9 @@ This software is proprietary and confidential. Unauthorized copying, modificatio
 **Dennis Westermann**  
 *aiEX Academy*
 
-- 🌐 Website: [aiex-academy.com](https://aiex-academy.com)
-- 📧 Email: contact@aiex-academy.com
-- 💼 LinkedIn: [Dennis Westermann](https://linkedin.com/in/denniswestermann)
+- 🌐 Website: [goaiex.com](https://goaiex.com)
+- 📧 Email: mail@goaiex.com
+- 💼 LinkedIn: [Dennis Westermann](https://www.linkedin.com/in/dennis-westermann-6b0577168/)
 
 ## 🙏 Acknowledgments
 
@@ -293,7 +293,7 @@ This software is proprietary and confidential. Unauthorized copying, modificatio
 ## 📞 Support
 
 For support, issues, or feature requests:
-- 📧 Email: support@aiex-academy.com
+- 📧 Email: mail@goaiex.com
 - 🐛 Issues: [GitHub Issues](https://github.com/yourusername/bunny-vtt-converter/issues)
 - 📖 Documentation: [Wiki](https://github.com/yourusername/bunny-vtt-converter/wiki)
 
