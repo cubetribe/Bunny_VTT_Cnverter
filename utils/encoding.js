@@ -118,53 +118,13 @@ function convertToUTF8(buffer, encoding = null) {
   }
 
   try {
-    // Auto-detect encoding if not provided
     const sourceEncoding = encoding || detectEncoding(buffer);
     
-    // If already UTF-8, check for double-encoding issues
-    if (sourceEncoding === 'utf8') {
-      // Check for and remove UTF-8 BOM
-      let cleanBuffer = buffer;
-      if (buffer.length >= 3 && 
-          buffer[0] === 0xEF && 
-          buffer[1] === 0xBB && 
-          buffer[2] === 0xBF) {
-        cleanBuffer = buffer.slice(3);
-      }
-      
-      // Check for double-encoded UTF-8
-      const text = cleanBuffer.toString('utf8');
-      console.log('🔍 Checking for double-encoding in UTF-8 buffer...');
-      if (text.includes('Ã¼') || text.includes('Ã¶') || text.includes('Ã¤') || 
-          text.includes('ÃŸ') || text.includes('Ã„') || text.includes('Ã–') || 
-          text.includes('Ãœ') || text.includes('Ã©') || text.includes('Ã¨')) {
-        console.log('⚠️  FOUND double-encoded characters!');
-        console.log('Before fix (first 200 chars):', text.substring(0, 200));
-        const fixedText = fixDoubleEncodedUTF8(text);
-        console.log('After fix (first 200 chars):', fixedText.substring(0, 200));
-        return Buffer.from(fixedText, 'utf8');
-      } else {
-        console.log('✅ No double-encoding detected in UTF-8 buffer');
-      }
-      
-      return cleanBuffer;
-    }
-
-    // Convert from source encoding to UTF-8
     let decoded = iconv.decode(buffer, sourceEncoding);
     
-    // Check for double-encoding in the decoded text
-    console.log('🔍 Checking for double-encoding after decoding from', sourceEncoding);
-    if (decoded.includes('Ã¼') || decoded.includes('Ã¶') || decoded.includes('Ã¤') || 
-        decoded.includes('ÃŸ') || decoded.includes('Ã„') || decoded.includes('Ã–') || 
-        decoded.includes('Ãœ') || decoded.includes('Ã©') || decoded.includes('Ã¨')) {
-      console.log('⚠️  FOUND double-encoded characters after conversion!');
-      console.log('Before fix (first 200 chars):', decoded.substring(0, 200));
-      decoded = fixDoubleEncodedUTF8(decoded);
-      console.log('After fix (first 200 chars):', decoded.substring(0, 200));
-    } else {
-      console.log('✅ No double-encoding detected after conversion');
-    }
+    // After decoding, run the fix routine to catch potential double-encoded characters.
+    // This is safe to run even on correctly-encoded strings.
+    decoded = fixDoubleEncodedUTF8(decoded);
     
     const utf8Buffer = iconv.encode(decoded, 'utf8');
     
@@ -181,7 +141,6 @@ function convertToUTF8(buffer, encoding = null) {
     console.warn(`Encoding conversion failed for ${encoding || 'auto-detected'}: ${error.message}`);
     console.warn('Falling back to UTF-8 interpretation');
     
-    // Fallback: treat as UTF-8 and remove BOM if present
     if (buffer.length >= 3 && 
         buffer[0] === 0xEF && 
         buffer[1] === 0xBB && 
@@ -193,74 +152,34 @@ function convertToUTF8(buffer, encoding = null) {
 }
 
 /**
- * Fixes double-encoded UTF-8 text where UTF-8 bytes were misinterpreted as ISO-8859-1
+ * Fixes double-encoded UTF-8 text where UTF-8 bytes were misinterpreted as a single-byte encoding.
  * @param {string} text - The text with potential double-encoding issues
  * @returns {string} - Fixed text with correct UTF-8 characters
  */
 function fixDoubleEncodedUTF8(text) {
-  // Pattern for double-encoded UTF-8 characters
-  const replacements = {
-    'Ã¤': 'ä',
-    'Ã¶': 'ö',
-    'Ã¼': 'ü',
-    'Ã„': 'Ä',
-    'Ã–': 'Ö',
-    'Ãœ': 'Ü',
-    'ÃŸ': 'ß',
-    'Ã©': 'é',
-    'Ã¨': 'è',
-    'Ã ': 'à',
-    'Ã¢': 'â',
-    'Ã§': 'ç',
-    'Ã±': 'ñ',
-    'Ã¡': 'á',
-    'Ã­': 'í',
-    'Ã³': 'ó',
-    'Ãº': 'ú',
-    'Ã€': 'À',
-    'Ã‰': 'É',
-    'Ãˆ': 'È',
-    'Ã‚': 'Â',
-    'ÃŠ': 'Ê',
-    'Ã´': 'ô',
-    'Ã®': 'î',
-    'Ã¯': 'ï',
-    'Ã«': 'ë',
-    'â€™': "'",
-    'â€œ': '"',
-    'â€�': '"',
-    'â€"': '—',
-    'â€"': '–',
-    'â€¦': '…',
-    // Additional patterns from real-world double-encoding - actual UTF-8 sequences as seen
-    'Ã¼': 'ü',
-    'Ã¶': 'ö', 
-    'Ã¤': 'ä',
-    'Ã': 'ß',  // standalone Ã often becomes ß
-    // Additional patterns for triple-encoded cases
-    'ÃƒÂ¤': 'ä',
-    'ÃƒÂ¶': 'ö',
-    'ÃƒÂ¼': 'ü',
-    'ÃƒÅ¸': 'ß',
-    'Ã¢â‚¬Å"': '"',
-    'Ã¢â‚¬ï¿½': '"',
-    'Ã¢â‚¬â„¢': "'",
-    'Ã¢â‚¬â€œ': '–',
-    'Ã¢â‚¬â€�': '—'
-  };
-  
-  let fixed = text;
-  // First pass: fix triple-encoded patterns
-  for (const [broken, correct] of Object.entries(replacements)) {
-    fixed = fixed.replace(new RegExp(broken.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), correct);
+  try {
+    // This pattern is a strong indicator of UTF-8 bytes being misinterpreted as latin1 or similar.
+    // e.g., 'ü' (UTF-8: C3 BC) becomes 'Ã¼' when decoded as latin1.
+    if (!text.includes('Ã')) {
+      return text;
+    }
+
+    // Reverse the incorrect decoding: encode the broken string's char codes as bytes.
+    const originalBytes = iconv.encode(text, 'latin1');
+
+    // Now, decode those bytes correctly as UTF-8.
+    const fixedText = iconv.decode(originalBytes, 'utf8');
+
+    // If the fix didn't change anything or introduced new errors, revert to the original.
+    if (fixedText === text || fixedText.includes('Ã')) {
+      return text;
+    }
+
+    return fixedText;
+  } catch (error) {
+    // If the process fails, return the original text to prevent crashes.
+    return text;
   }
-  
-  // Second pass: check if we need another round (for deeply nested encodings)
-  if (fixed !== text && (fixed.includes('Ã') || fixed.includes('â€'))) {
-    fixed = fixDoubleEncodedUTF8(fixed);
-  }
-  
-  return fixed;
 }
 
 /**
