@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileInput = document.getElementById('fileInput');
     const browseBtn = document.getElementById('browseBtn');
     const includeBase64Checkbox = document.getElementById('includeBase64');
+    const enableAiCorrectionCheckbox = document.getElementById('enableAiCorrection');
     const progressSection = document.getElementById('progressSection');
     const progressFill = document.getElementById('progressFill');
     const progressText = document.getElementById('progressText');
@@ -184,6 +185,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (includeBase64Checkbox.checked) {
                     formData.append('base64', 'true');
                 }
+
+                // Add AI correction option
+                formData.append('enableAiCorrection', enableAiCorrectionCheckbox.checked);
 
                 // Upload file with timeout and retry logic
                 const controller = new AbortController();

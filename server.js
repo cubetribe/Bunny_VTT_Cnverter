@@ -8,7 +8,7 @@ require('dotenv').config();
 const { logger } = require('./utils/logger');
 
 // Import utility modules
-const { detectEncoding, convertToUTF8 } = require('./utils/encoding');
+const { detectEncoding, convertToUTF8, fixDoubleEncodedUTF8 } = require('./utils/encoding');
 const { validateSRTFormat, parseSRT } = require('./utils/srt-parser');
 const { generateVTT, validateVTTFormat, validateBunnyStreamCompliance, generateBase64Output, getVTTMimeTypeConfig } = require('./utils/vtt-generator');
 const { detectLanguage, getSupportedLanguages, isValidLanguageCode, getLanguageName } = require('./utils/language-detection');
@@ -189,14 +189,18 @@ app.post('/convert', upload.single('srtFile'), async (req, res) => {
     let correctionUsed = false;
     let correctionError = null;
 
-    if (openaiClient.isAvailable()) {
+    // Check if AI correction is enabled by the user in the frontend
+    const useAiCorrection = req.body.enableAiCorrection === 'true';
+
+    if (openaiClient.isAvailable() && useAiCorrection) {
       logger.logProcessing('correction', req.file.originalname, { 
         service: 'openai' 
       });
       const correctionResult = await openaiClient.correctWithFallback(srtContent);
       
       if (correctionResult.success) {
-        correctedContent = correctionResult.correctedText;
+        // Apply encoding fix AGAIN after OpenAI, as it might re-introduce issues.
+        correctedContent = fixDoubleEncodedUTF8(correctionResult.correctedText);
         correctionUsed = !correctionResult.usedFallback;
         
         if (correctionResult.usedFallback) {
@@ -213,8 +217,12 @@ app.post('/convert', upload.single('srtFile'), async (req, res) => {
         logger.logOpenAI('error', { error: correctionResult.error });
       }
     } else {
-      logger.info('OpenAI not available, skipping text correction');
-      correctionError = 'OpenAI API key not configured';
+      logger.info('OpenAI correction skipped (either disabled by user or not available)');
+      if (!useAiCorrection) {
+        correctionError = 'AI correction disabled by user.';
+      } else {
+        correctionError = 'OpenAI API key not configured.';
+      }
     }
 
     // Re-parse corrected content if correction was applied

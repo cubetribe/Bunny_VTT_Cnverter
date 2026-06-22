@@ -11,6 +11,7 @@
         <header>
             <h1>SRT to VTT Converter</h1>
             <p>Convert your SRT subtitle files to Bunny Stream-compatible VTT format with automatic spelling correction</p>
+            <p class="version">Version 0.2.0</p>
         </header>
 
         <main>
@@ -37,6 +38,14 @@
                             Include Base64 output for Bunny Stream API
                         </label>
                         <small class="option-description">Generate Base64 encoded content for direct API integration</small>
+                    </div>
+                    <div class="option-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="enableAiCorrection" class="option-checkbox" checked>
+                            <span class="checkmark"></span>
+                            Enable AI Text Correction (GPT-5)
+                        </label>
+                        <small class="option-description">Uses AI to fix spelling and grammar. May increase processing time.</small>
                     </div>
                 </div>
             </div>
